@@ -1,36 +1,59 @@
 import { renderToString } from 'react-dom/server'
 import React from 'react'
 const router = require('express').Router()
-import { matchPath, StaticRouter, ServerRouter } from 'react-router-dom'
+import { match } from 'react-router'
+import { matchPath, StaticRouter, RouterContext } from 'react-router-dom'
 import { Provider } from 'react-redux';
 import { createStore, applyMiddleware} from 'redux';
 import ReduxPromise from 'redux-promise'
-import reducers from '../../client/reducers'
+import reducers from '../../shared/reducers'
 
 const path = require('path')
 
-import routes from '../../client/routes'
-import renderFullPage from './renderFullPage'
-import { tempInfo, userTempInfo, fakeDB, fakeProjects, experience, skills } from '../db/mock-data.js'
-import App from '../../client/components/app'
+import routes from '../../shared/routes'
+import renderFullPage from '../renderFullPage'
+// import App from '../../shared/components/app'
 
 const createStoreWithMiddleware = applyMiddleware(ReduxPromise)(createStore);
 
 router.use('*', (req, res) => {
+  match({ routes: routes, location: req.originalUrl}, (err, redirectLocation, renderProps) => {
+    console.log( 'renderProps::', renderProps )
+    if (err) {
+      return res.status(500).send(err.message);
+    }
 
-  const match = routes.reduce((acc, route) => matchPath(req.originalUrl, { path: route, exact: true}) || acc, null)
+    if (redirectLocation) {
+      return res.redirect(302, redirectLocation.pathname + redirectLocation.search);
+    }
+
+
+  })
+  // matchPath(req.originalUrl, { path: route, exact: true})
+
+  var markup
 
   const context = {}
+  if (renderProps) {
+      markup = renderToString(
+          <Provider store={createStoreWithMiddleware(reducers)}>
+             { <RouterContext {...renderProps} />}
+             <StaticRouter context={context} location={req.originalUrl} />
+          </Provider>
+      )
+  }
 
-  const html = renderToString(
-    <Provider store={createStoreWithMiddleware(reducers)}>
-      <StaticRouter context={context} location={req.originalUrl} >
-        <App />
-      </StaticRouter>
-    </Provider>
-  )
+  // var html
+  // if (renderProps) {
+  //   html = renderToString(
+  //     <Provider store={createStoreWithMiddleware(reducers)}>
+  //     // <StaticRouter context={context} location={req.originalUrl} />
+  //     { <RouterContext {...renderProps} />}
+  //     </Provider>
+  //   )
+  // }
 
-  res.send(renderFullPage(html))
+  return res.render('index', { markup });
 })
 
 module.exports = router

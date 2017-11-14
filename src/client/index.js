@@ -3,17 +3,15 @@ import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 import { createStore, applyMiddleware} from 'redux';
 import ReduxPromise from 'redux-promise'
-import { BrowserRouter, Route, Switch} from 'react-router-dom';
+import { BrowserRouter, Route, browserHistory} from 'react-router-dom';
 
-import App from './components/app'
-import reducers from './reducers'
+import routes from '../shared/routes'
+import reducers from '../shared/reducers'
 
 const createStoreWithMiddleware = applyMiddleware(ReduxPromise)(createStore)
 
 ReactDOM.hydrate(
   <Provider store={createStoreWithMiddleware(reducers)}>
-    <BrowserRouter>
-      <App/>
-    </BrowserRouter>
+    <BrowserRouter history={browserHistory} routes={routes} />
   </Provider>
   , document.querySelector('.container'));
